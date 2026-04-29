@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOQ Team Workload — Schedule Timeline</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sarabun',system-ui,sans-serif;background:#F4F6F9;color:#1A1A2E;min-height:100vh;}
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap');
+
+  /* ── Layout ── */
+  .app{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem;}
+
+  /* ── Header ── */
+  .page-header{background:#1E3A5F;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .page-header h1{font-size:18px;font-weight:600;color:#fff;letter-spacing:.3px;}
+  .page-header .sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:3px;}
+  .header-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .team-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff;white-space:nowrap;}
+
+  /* ── Toolbar ── */
+  .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap;}
+  .toolbar .left{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
+  .toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  select,input[type=date],input[type=text],input[type=number]{border:1px solid #D0D9E8;border-radius:7px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff;color:#1A1A2E;outline:none;transition:border .15s;}
+  select:focus,input:focus{border-color:#378ADD;}
+  button{border:1px solid #D0D9E8;border-radius:7px;padding:6px 12px;font-size:12px;font-family:inherit;background:#fff;color:#1A1A2E;cursor:pointer;transition:background .15s,border .15s;}
+  button:hover{background:#F0F4FA;border-color:#378ADD;}
+  button.primary{background:#1E3A5F;color:#fff;border-color:#1E3A5F;}
+  button.primary:hover{background:#2E5580;}
+  button.danger{color:#C0392B;border-color:#F5C6C6;}
+  button.danger:hover{background:#FDF2F2;}
+
+  /* ── Form ── */
+  .add-form{background:#fff;border:1px solid #E2EAF4;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;display:none;}
+  .add-form.open{display:block;}
+  .form-title{font-size:13px;font-weight:600;margin-bottom:1rem;color:#1E3A5F;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .form-grid .full{grid-column:1/-1;}
+  .form-label{font-size:10px;color:#6B7D9A;display:block;margin-bottom:3px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;}
+  .mp-row{display:flex;align-items:center;gap:6px;}
+  .mp-row input{width:60px;}
+  .mp-hint{font-size:11px;color:#9AACC0;}
+  .form-actions{display:flex;gap:8px;align-items:center;}
+  .form-err{color:#C0392B;font-size:11px;margin-top:6px;display:none;}
+
+  /* ── Legend ── */
+  .legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:.875rem;}
+  .legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#5A6A84;}
+  .legend-swatch{width:13px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0;}
+  .legend-sep{width:.5px;height:14px;background:#D0D9E8;flex-shrink:0;}
+
+  /* ── Nav ── */
+  .nav-row{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-bottom:.75rem;flex-wrap:wrap;}
+  .nav-label{font-size:12px;font-weight:600;min-width:170px;text-align:center;color:#1E3A5F;}
+
+  /* ── Gantt wrapper ── */
+  .gantt-wrap{border:1px solid #DDE5F0;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(30,58,95,.06);}
+  .gantt-scroll{overflow-x:auto;}
+
+  /* ── Job detail panel ── */
+  .job-detail{display:none;margin-top:.75rem;background:#fff;border:1px solid #E2EAF4;border-radius:12px;padding:1rem 1.25rem;}
+  .job-detail.open{display:block;}
+  .jd-title{font-size:13px;font-weight:600;color:#1E3A5F;margin-bottom:6px;}
+  .jd-sub{font-size:12px;color:#5A6A84;line-height:1.85;}
+  .jd-actions{display:flex;gap:8px;margin-top:10px;}
+
+  /* ── Summary cards ── */
+  .summary-section{margin-top:1.25rem;}
+  .summary-label{font-size:11px;color:#6B7D9A;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
+  .summary-card{background:#fff;border:1px solid #E2EAF4;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(30,58,95,.04);}
+  .sc-team{font-size:10px;color:#6B7D9A;margin-bottom:4px;font-weight:500;}
+  .sc-bar-wrap{height:3px;background:#E8EEF6;border-radius:2px;margin-bottom:6px;overflow:hidden;}
+  .sc-bar{height:100%;border-radius:2px;transition:width .3s;}
+  .sc-num{font-size:16px;font-weight:700;color:#1E3A5F;}
+  .sc-num span{font-size:11px;color:#9AACC0;font-weight:400;}
+  .sc-avail{font-size:10px;margin-top:2px;}
+
+  /* ── Overload banner ── */
+  .overload-badge{background:#FDF2F2;border:1px solid #F5C6C6;border-radius:7px;padding:4px 10px;font-size:11px;color:#C0392B;font-weight:500;}
+
+  /* ── Today badge ── */
+  .today-badge{background:#FFF3E0;border:1px solid #FECB8B;border-radius:7px;padding:4px 10px;font-size:11px;color:#E65100;font-weight:500;}
+
+  /* ── Standard rule bar ── */
+  .std-bar{background:#EEF4FF;border:1px solid #C5D9F5;border-radius:10px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:12px;}
+  .std-tag{background:#1E3A5F;color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+  .std-desc{font-size:12px;color:#2E5580;}
+  .std-cap-grid{margin-top:8px;overflow-x:auto;}
+  .std-cap-item{background:#fff;border:1px solid #D0E0F5;border-radius:7px;padding:4px 10px;font-size:11px;color:#1E3A5F;text-align:center;white-space:nowrap;}
+  .std-cap-item strong{display:block;font-size:15px;font-weight:700;color:#1E3A5F;}
+  .std-cap-item span{font-size:9px;color:#7A94B0;}
+  /* ── Capacity slots ── */
+  .slot-row{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+  .slot{width:14px;height:14px;border-radius:3px;border:1.5px solid;}
+  .slot.free{background:rgba(26,122,74,.13);border-color:#1A7A4A;}
+  .slot.used{background:rgba(55,138,221,.18);border-color:#378ADD;}
+  .slot.over{background:rgba(226,75,74,.15);border-color:#E24B4A;}
+  @media(max-width:600px){.form-grid{grid-template-columns:1fr;}.page-header{flex-direction:column;}.page-header h1{font-size:15px;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>BOQ Team Workload — Schedule Timeline</h1>
+      <div class="sub">ข้อมูลจาก ClickUp · Turnaround Time Framework 2025-02-09 · อัพเดต <span id="today-str"></span></div>
+    </div>
+    <div class="header-meta">
+      <div class="team-pill">AR&amp;ID · 6 คน</div>
+      <div class="team-pill">ST · 3 คน</div>
+      <div class="team-pill">MEP · 5 คน</div>
+      <div class="team-pill">Budget · 2 คน</div>
+      <div class="team-pill" id="total-jobs-pill"></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="left">
+      <select id="filter-team" onchange="render()">
+        <option value="">ทุกทีม</option>
+        <option>AR&amp;ID</option><option>ST</option><option>MEP</option><option>Budget</option></select>
+      <select id="filter-type" onchange="render()">
+        <option value="">ทุกประเภท</option>
+        <option>Pretender</option><option>Blank BOQ</option><option>Budget</option>
+        <option>VE</option><option>Cost Exercise</option><option>VO</option><option>Meeting</option>
+      </select>
+      <select id="filter-status" onchange="render()">
+        <option value="">ทุกสถานะ</option>
+        <option value="inprogress">กำลังทำ</option>
+        <option value="todo">จะต้องทำ</option>
+        <option value="pending">รอตัดสินใจ</option>
+      </select>
+    </div>
+    <div class="right">
+      <button onclick="exportJSON()" style="font-size:11px;padding:4px 8px;" title="Export JSON">⬇ JSON</button>
+      <label style="font-size:11px;padding:4px 8px;border:1px solid #D0D9E8;border-radius:7px;cursor:pointer;background:#fff;" title="Import JSON">⬆ Import<input type="file" accept=".json" onchange="importJSON(event)" style="display:none;"></label>
+      <button class="primary" id="toggle-btn" onclick="toggleForm()">+ เพิ่มงาน</button>
+    </div>
+  </div>
+
+  <!-- SharePoint Config Banner -->
+  <div id="sp-banner" style="background:#fff;border:1px solid #D0E0F5;border-radius:10px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div style="font-size:11px;font-weight:600;color:#1E3A5F;white-space:nowrap;">⚙ SharePoint</div>
+    <input id="sp-site" type="text" placeholder="https://yourcompany.sharepoint.com/sites/YourSite" 
+      style="flex:1;min-width:260px;font-size:11px;" 
+      title="URL ของ SharePoint Site (ไม่ต้องใส่ / ท้าย)">
+    <input id="sp-list" type="text" value="BOQ_WorkPlan" 
+      style="width:140px;font-size:11px;" placeholder="ชื่อ List">
+    <button onclick="spConnect()" class="primary" style="font-size:11px;padding:4px 10px;">เชื่อมต่อ</button>
+    <button onclick="spPush()" id="sp-push-btn" style="font-size:11px;padding:4px 10px;display:none;">⬆ Push ทั้งหมด</button>
+    <button onclick="spPull()" id="sp-pull-btn" style="font-size:11px;padding:4px 10px;display:none;">⬇ Pull ข้อมูล</button>
+    <span id="sp-status" style="font-size:11px;color:#5A7A9A;"></span>
+  </div>
+
+  <!-- Standard Rule Banner -->
+  <div class="std-bar" id="std-bar">
+    <div class="std-tag">Standard</div>
+    <div style="width:100%;">
+      <div style="font-size:11px;color:#1E3A5F;font-weight:600;margin-bottom:6px;">Turnaround Time Framework — Standard Manpower &amp; Duration</div>
+      <table style="border-collapse:collapse;font-size:10.5px;width:100%;max-width:780px;">
+        <thead>
+          <tr style="background:#1E3A5F;color:#fff;">
+            <th style="padding:5px 8px;text-align:left;border-radius:4px 0 0 0;">Job Type</th>
+            <th style="padding:5px 6px;text-align:center;">AR&amp;ID<br><span style="font-size:9px;opacity:.7;">mp/job</span></th>
+            <th style="padding:5px 6px;text-align:center;">ST<br><span style="font-size:9px;opacity:.7;">mp/job</span></th>
+            <th style="padding:5px 6px;text-align:center;">MEP<br><span style="font-size:9px;opacity:.7;">mp/job</span></th>
+            <th style="padding:5px 6px;text-align:center;">Budget<br><span style="font-size:9px;opacity:.7;">mp/job</span></th>
+            <th style="padding:5px 6px;text-align:center;">&lt;10k m²<br><span style="font-size:9px;opacity:.7;">สัปดาห์</span></th>
+            <th style="padding:5px 6px;text-align:center;">10k–30k<br><span style="font-size:9px;opacity:.7;">สัปดาห์</span></th>
+            <th style="padding:5px 6px;text-align:center;border-radius:0 4px 0 0;">&gt;30k m²<br><span style="font-size:9px;opacity:.7;">สัปดาห์</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#f0f5ff;"><td style="padding:4px 8px;font-weight:600;color:#185FA5;">Blank BOQ</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;font-weight:700;color:#993556;">3</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">4</td><td style="text-align:center;padding:4px;">4</td><td style="text-align:center;padding:4px;">4</td></tr>
+          <tr><td style="padding:4px 8px;font-weight:600;color:#993556;">Pretender</td><td style="text-align:center;padding:4px;font-weight:700;color:#993556;">3</td><td style="text-align:center;padding:4px;font-weight:700;color:#993556;">3</td><td style="text-align:center;padding:4px;font-weight:700;color:#993556;">3</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">4</td><td style="text-align:center;padding:4px;">5</td><td style="text-align:center;padding:4px;">6</td></tr>
+          <tr style="background:#f0f5ff;"><td style="padding:4px 8px;font-weight:600;color:#0F6E56;">Budget</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;font-weight:700;color:#0F6E56;">2</td><td style="text-align:center;padding:4px;">4</td><td style="text-align:center;padding:4px;">5</td><td style="text-align:center;padding:4px;">6</td></tr>
+          <tr><td style="padding:4px 8px;font-weight:600;color:#534AB7;">VE</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">3</td></tr>
+          <tr style="background:#f0f5ff;"><td style="padding:4px 8px;font-weight:600;color:#993C1D;">Cost Exercise</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">3</td><td style="text-align:center;padding:4px;">3</td><td style="text-align:center;padding:4px;">4</td></tr>
+          <tr><td style="padding:4px 8px;font-weight:600;color:#3B6D11;">VO</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">1</td><td style="text-align:center;padding:4px;">2</td><td style="text-align:center;padding:4px;">5</td><td style="text-align:center;padding:4px;">6</td></tr>
+        </tbody>
+      </table>
+      <div id="std-cap-grid" style="margin-top:10px;overflow-x:auto;"></div>
+    </div>
+
+  </div>
+
+  <!-- Add/Edit Form -->
+  <div class="add-form" id="add-form">
+    <div class="form-title" id="form-title">เพิ่มงานใหม่</div>
+    <div class="form-grid">
+      <div class="full"><label class="form-label">ชื่อโปรเจกต์</label><input id="f-name" type="text" placeholder="ชื่อโปรเจกต์..." style="width:100%;"></div>
+      <div class="full"><label class="form-label">Package / งาน</label><input id="f-pkg" type="text" placeholder="Package..." style="width:100%;"></div>
+      <div><label class="form-label">ทีม</label><select id="f-team" onchange="updateMpMax()" style="width:100%;"><option>AR&amp;ID</option><option>ST</option><option>MEP</option><option>Budget</option></select></div>
+      <div><label class="form-label">ประเภทงาน</label><select id="f-jtype" style="width:100%;"><option>Pretender</option><option>Blank BOQ</option><option>Budget</option><option>VE</option><option>Cost Exercise</option><option>VO</option><option>Meeting</option></select></div>
+      <div><label class="form-label">สถานะ</label><select id="f-status" style="width:100%;"><option value="inprogress">กำลังทำ</option><option value="todo">จะต้องทำ</option><option value="pending">รอตัดสินใจ</option></select></div>
+      <div><label class="form-label">Manpower <span style="font-size:9px;color:#378ADD;font-weight:600;">(Standard = 3)</span></label><div class="mp-row"><input id="f-mp" type="number" min="1" max="6" value="3"><span class="mp-hint" id="mp-hint">/ 6 คน</span></div></div>
+      <div><label class="form-label">วันเริ่มงาน</label><input id="f-start" type="date" style="width:100%;" onchange="autoFillEnd()"></div>
+      <div><label class="form-label">Due Date</label><input id="f-due" type="date" style="width:100%;"></div>
+      <div><label class="form-label">ขนาดโครงการ</label>
+      <select id="f-projsize" onchange="autoFillEnd()" style="width:100%;font-size:12px;">
+        <option value="S">S — ไม่เกิน 10,000 m²</option>
+        <option value="M" selected>M — 10,001–30,000 m²</option>
+        <option value="L">L — มากกว่า 30,000 m²</option>
+      </select></div>
+    <div><label class="form-label">วันสิ้นสุด <span id="dur-hint" style="font-size:9px;color:#378ADD;">(กรอกวันเริ่มเพื่อ auto-fill)</span></label><input id="f-end" type="date" style="width:100%;"></div>
+    </div>
+    <div class="form-actions">
+      <button class="primary" onclick="saveJob()">บันทึก</button>
+      <button onclick="cancelForm()">ยกเลิก</button>
+      <button class="danger" id="del-btn" onclick="deleteJob()" style="display:none;margin-left:auto;">ลบงาน</button>
+    </div>
+    <div class="form-err" id="form-err"></div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="legend"></div>
+
+  <!-- Nav row -->
+  <div class="nav-row">
+    <button onclick="navigate(-1)">←</button>
+    <span class="nav-label" id="nav-label"></span>
+    <button onclick="navigate(1)">→</button>
+    <button onclick="goToday()">วันนี้</button>
+    <select id="zoom-sel" onchange="render()">
+      <option value="6">6W</option><option value="8">8W</option>
+      <option value="12" selected>12W</option><option value="16">16W</option><option value="24">24W</option>
+    </select>
+  </div>
+
+  <!-- Gantt -->
+  <div class="gantt-wrap"><div class="gantt-scroll"><div id="gantt"></div></div></div>
+
+  <!-- Job Detail -->
+  <div class="job-detail" id="job-detail">
+    <div class="jd-title" id="jd-title"></div>
+    <div class="jd-sub" id="jd-sub"></div>
+    <div class="jd-actions">
+      <button onclick="openEdit()">แก้ไข</button>
+      <button onclick="closeDetail()">ปิด</button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-section">
+    <div class="summary-label">สถานะวันนี้ — Manpower ที่ใช้งาน / ว่าง</div>
+    <div class="summary-grid" id="summary-cards"></div>
+  </div>
+
+</div><!-- end .app -->
+
+<script>
+const TEAMS=['AR&ID','ST','MEP','Budget'];
+const TCFG={'AR&ID':{size:6},'ST':{size:3},'MEP':{size:5},'Budget':{size:2}};
+const TM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const JT={
+  'Pretender':    {sh:'PRDR',c:'#993556',bg:'rgba(212,83,126,0.15)'},
+  'Blank BOQ':    {sh:'BOQ', c:'#185FA5',bg:'rgba(55,138,221,0.15)'},
+  'Budget':       {sh:'BDGT',c:'#0F6E56',bg:'rgba(29,158,117,0.15)'},
+  'VE':           {sh:'VE',  c:'#534AB7',bg:'rgba(127,119,221,0.15)'},
+  'Cost Exercise':{sh:'COST',c:'#993C1D',bg:'rgba(216,90,48,0.15)'},
+  'VO':           {sh:'VO',  c:'#3B6D11',bg:'rgba(99,153,34,0.15)'},
+  'Meeting':      {sh:'MTG', c:'#5F5E5A',bg:'rgba(136,135,128,0.15)'}
+};
+const SC={
+  inprogress:{lbl:'กำลังทำ',  bc:'#378ADD'},
+  todo:      {lbl:'จะต้องทำ', bc:'#EF9F27'},
+  pending:   {lbl:'รอตัดสินใจ',bc:'#7F77DD'}
+};
+
+let jobs=[
+  {id:1, name:'TRV',         pkg:'Phase 2+3 Pretender Rev.1 (VE)',   jobType:'VE',           team:'AR&ID', start:'2026-04-21',end:'2026-04-28',due:'2026-04-28',status:'inprogress',manpower:2},
+  {id:2, name:'TRV',         pkg:'Phase 1 - Cost Exercise',          jobType:'Cost Exercise',team:'AR&ID', start:'2026-04-21',end:'2026-04-28',due:'2026-04-28',status:'inprogress',manpower:1},
+  {id:3, name:'Future Park', pkg:'Pretender - MEP West Void',        jobType:'Pretender',    team:'MEP',   start:'2026-04-21',end:'2026-04-28',due:'2026-04-28',status:'inprogress',manpower:2},
+  {id:4, name:'CMBR Ph.2',   pkg:'Pretender No.2 - Softscape',       jobType:'Pretender',    team:'AR&ID', start:'2026-04-22',end:'2026-04-29',due:'2026-04-29',status:'inprogress',manpower:1},
+  {id:5, name:'Budget Hotel',pkg:'Blank BOQ No.2 - Main+MEP',        jobType:'Blank BOQ',    team:'ST',    start:'2026-04-28',end:'2026-04-29',due:'2026-04-29',status:'inprogress',manpower:1},
+  {id:6, name:'Budget Hotel',pkg:'Blank BOQ No.2 - Main+MEP',        jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-28',end:'2026-04-29',due:'2026-04-29',status:'inprogress',manpower:1},
+  {id:7, name:'Budget Hotel',pkg:'Blank BOQ No.2 - Main+MEP',        jobType:'Blank BOQ',    team:'MEP',   start:'2026-04-28',end:'2026-04-29',due:'2026-04-29',status:'inprogress',manpower:3},
+  {id:8, name:'Proton',      pkg:'Pretender No.2 - New Layout',      jobType:'Pretender',    team:'ST',    start:'2026-04-20',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:3},
+  {id:9, name:'Proton',      pkg:'Pretender No.2 - New Layout',      jobType:'Pretender',    team:'AR&ID', start:'2026-04-20',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:3},
+  {id:10,name:'Proton',      pkg:'Pretender No.2 - New Layout',      jobType:'Pretender',    team:'MEP',   start:'2026-04-20',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:3},
+  {id:11,name:'Future Park', pkg:'Pretender - F-Runway Phase 2',     jobType:'Pretender',    team:'AR&ID', start:'2026-04-20',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:3},
+  {id:12,name:'Electrolux',  pkg:'Budget Estimate No.1 (2 Option)',  jobType:'Budget',       team:'ST',    start:'2026-04-23',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:1},
+  {id:13,name:'Electrolux',  pkg:'Budget Estimate No.1 (2 Option)',  jobType:'Budget',       team:'AR&ID', start:'2026-04-23',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:1},
+  {id:14,name:'Electrolux',  pkg:'Budget Estimate No.1 (2 Option)',  jobType:'Budget',       team:'MEP',   start:'2026-04-23',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:1},
+  {id:15,name:'RSBP P2',     pkg:'Blank BOQ - Softscape+Hardscape',  jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-23',end:'2026-04-30',due:'2026-04-30',status:'inprogress',manpower:1},
+  {id:16,name:'SSFR Ph.2',   pkg:'Blank BOQ No.1 - Villa L (ST)',    jobType:'Blank BOQ',    team:'ST',    start:'2026-04-20',end:'2026-05-04',due:'2026-05-04',status:'todo',manpower:1},
+  {id:17,name:'Budget Hotel',pkg:'Pretender No.2 - Main+MEP',        jobType:'Pretender',    team:'ST',    start:'2026-04-28',end:'2026-05-04',due:'2026-05-04',status:'todo',manpower:3},
+  {id:18,name:'Budget Hotel',pkg:'Pretender No.2 - Main+MEP',        jobType:'Pretender',    team:'AR&ID', start:'2026-04-28',end:'2026-05-04',due:'2026-05-04',status:'todo',manpower:3},
+  {id:19,name:'Budget Hotel',pkg:'Pretender No.2 - Main+MEP',        jobType:'Pretender',    team:'MEP',   start:'2026-04-28',end:'2026-05-04',due:'2026-05-04',status:'todo',manpower:3},
+  {id:20,name:'Future Park', pkg:'Blank BOQ No.1 - MEP F-Runway',    jobType:'Blank BOQ',    team:'MEP',   start:'2026-04-28',end:'2026-05-04',due:'2026-05-04',status:'todo',manpower:2},
+  {id:21,name:'HIS',         pkg:'Blank BOQ No.1 - Interior Works',  jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-28',end:'2026-05-05',due:'2026-05-05',status:'todo',manpower:2},
+  {id:22,name:'Proton',      pkg:'VE List - Main & MEP',             jobType:'VE',           team:'ST',    start:'2026-04-30',end:'2026-05-07',due:'2026-05-07',status:'todo',manpower:1},
+  {id:23,name:'Proton',      pkg:'VE List - Main & MEP',             jobType:'VE',           team:'AR&ID', start:'2026-04-30',end:'2026-05-07',due:'2026-05-07',status:'todo',manpower:1},
+  {id:24,name:'Proton',      pkg:'VE List - Main & MEP',             jobType:'VE',           team:'MEP',   start:'2026-04-30',end:'2026-05-07',due:'2026-05-07',status:'todo',manpower:2},
+  {id:25,name:'Skyview',     pkg:'Blank BOQ No.1 - IT System',       jobType:'Blank BOQ',    team:'MEP',   start:'2026-04-28',end:'2026-05-08',due:'2026-05-08',status:'todo',manpower:1},
+  {id:26,name:'Sport City',  pkg:'Blank BOQ No.1 - Main+MEP',        jobType:'Blank BOQ',    team:'ST',    start:'2026-04-28',end:'2026-05-08',due:'2026-05-08',status:'todo',manpower:1},
+  {id:27,name:'Sport City',  pkg:'Blank BOQ No.1 - Main+MEP',        jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-28',end:'2026-05-08',due:'2026-05-08',status:'todo',manpower:1},
+  {id:28,name:'Sport City',  pkg:'Blank BOQ No.1 - Main+MEP',        jobType:'Blank BOQ',    team:'MEP',   start:'2026-04-28',end:'2026-05-08',due:'2026-05-08',status:'todo',manpower:2},
+  {id:29,name:'PABKK',       pkg:'VO Carpark - Structure (ST)',       jobType:'VO',           team:'ST',    start:'2026-04-20',end:'2026-05-11',due:'2026-05-11',status:'todo',manpower:1},
+  {id:30,name:'Aquaris',     pkg:'Budget No.8 - Kitchen Equipment',  jobType:'Budget',       team:'AR&ID', start:'2026-04-28',end:'2026-05-11',due:'2026-05-11',status:'todo',manpower:1},
+  {id:31,name:'Skyview',     pkg:'Pretender - MEP Provide Kitchen',  jobType:'Pretender',    team:'MEP',   start:'2026-04-28',end:'2026-05-13',due:'2026-05-13',status:'todo',manpower:2},
+  {id:32,name:'Skyview',     pkg:'Blank BOQ - ID Villa A,B,C',       jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-28',end:'2026-05-13',due:'2026-05-13',status:'todo',manpower:2},
+  {id:33,name:'RSBP P2',     pkg:'Pretender No.1 - Softscape+Hard.', jobType:'Pretender',    team:'AR&ID', start:'2026-05-01',end:'2026-05-15',due:'2026-05-15',status:'todo',manpower:3},
+  {id:34,name:'Future Park', pkg:'Pretender No.1 - MEP F-Runway',    jobType:'Pretender',    team:'MEP',   start:'2026-04-28',end:'2026-05-15',due:'2026-05-15',status:'todo',manpower:2},
+  {id:35,name:'Sport City',  pkg:'Budget No.3',                      jobType:'Budget',       team:'Budget',start:'2026-04-28',end:'2026-05-15',due:'2026-05-15',status:'todo',manpower:1},
+  {id:36,name:'PABKK',       pkg:'VO Carpark - Architecture (AR)',    jobType:'VO',           team:'AR&ID', start:'2026-04-28',end:'2026-05-18',due:'2026-05-18',status:'todo',manpower:1},
+  {id:37,name:'PABKK',       pkg:'VO Carpark - MEP Works',           jobType:'VO',           team:'MEP',   start:'2026-04-28',end:'2026-05-18',due:'2026-05-18',status:'todo',manpower:1},
+  {id:38,name:'SSFR Ph.2',   pkg:'Pretender No.1 - Villa L (ST)',    jobType:'Pretender',    team:'ST',    start:'2026-05-05',end:'2026-05-18',due:'2026-05-18',status:'todo',manpower:3},
+  {id:39,name:'HIS',         pkg:'Pretender No.1 - Interior Works',  jobType:'Pretender',    team:'AR&ID', start:'2026-05-06',end:'2026-05-18',due:'2026-05-18',status:'todo',manpower:3},
+  {id:40,name:'Sport City',  pkg:'Pretender No.1 - Main+MEP',        jobType:'Pretender',    team:'ST',    start:'2026-05-08',end:'2026-05-25',due:'2026-05-25',status:'todo',manpower:3},
+  {id:41,name:'Sport City',  pkg:'Pretender No.1 - Main+MEP',        jobType:'Pretender',    team:'AR&ID', start:'2026-05-08',end:'2026-05-25',due:'2026-05-25',status:'todo',manpower:3},
+  {id:42,name:'Sport City',  pkg:'Pretender No.1 - Main+MEP',        jobType:'Pretender',    team:'MEP',   start:'2026-05-08',end:'2026-05-25',due:'2026-05-25',status:'todo',manpower:2},
+  {id:43,name:'Skyview',     pkg:'Pretender No.1 - ID Villa A,B,C',  jobType:'Pretender',    team:'AR&ID', start:'2026-05-14',end:'2026-05-25',due:'2026-05-25',status:'todo',manpower:3},
+  {id:44,name:'Bangkok Rehap',pkg:'Budget No.1',                     jobType:'Budget',       team:'Budget',start:'2026-05-18',end:'2026-05-25',due:'2026-05-25',status:'todo',manpower:1},
+  {id:45,name:'Pumpkin',     pkg:'Office - Blank BOQ No.1 - ID',     jobType:'Blank BOQ',    team:'AR&ID', start:'2026-04-20',end:'2026-05-15',due:null,        status:'todo',manpower:1},
+  {id:46,name:'PABKK',       pkg:'Cost Exercise - Facade',           jobType:'Cost Exercise',team:'Budget',start:'2026-03-02',end:'2026-04-30',due:null,        status:'pending',manpower:1},
+  {id:47,name:'Pumpkin',     pkg:'Office - Pretender No.1 - ID',     jobType:'Pretender',    team:'AR&ID', start:'2026-05-01',end:'2026-05-31',due:null,        status:'pending',manpower:1},
+];
+let nextId=48,viewStart=new Date(),weeksToShow=12,selId=null,editId=null,delC=false;
+
+function eH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pD(s){if(!s)return null;const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function aD(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function d2p(d,vs,dw){return Math.round((d-vs)/86400000*dw);}
+function fmtD(d){if(!d)return'—';return`${d.getDate()} ${TM[d.getMonth()]} ${d.getFullYear()+543}`;}
+
+function getFiltered(){
+  const ft=document.getElementById('filter-team').value;
+  const fty=document.getElementById('filter-type').value;
+  const fs=document.getElementById('filter-status').value;
+  return jobs.filter(j=>(ft?j.team===ft:true)&&(fty?j.jobType===fty:true)&&(fs?j.status===fs:true));
+}
+
+function assignLanes(jlist,sz){
+  const sorted=[...jlist].sort((a,b)=>(pD(a.start)||0)-(pD(b.start)||0));
+  const le=new Array(sz).fill(new Date(0));
+  for(const j of sorted){
+    const js=pD(j.start),je=j.end?aD(pD(j.end),1):null;
+    if(!js||!je)continue;
+    const need=Math.min(j.manpower||1,sz);
+    let sl=-1;
+    outer:for(let i=0;i<=sz-need;i++){for(let k=0;k<need;k++)if(le[i+k]>js)continue outer;sl=i;break;}
+    if(sl<0){const free=le.map((t,i)=>t<=js?i:-1).filter(i=>i>=0);sl=free[0]??0;j._ov=free.length<need;}
+    else j._ov=false;
+    j._lane=sl;j._span=need;
+    for(let k=0;k<Math.min(need,sz-sl);k++)le[sl+k]=je;
+  }
+}
+
+function getCapSegs(team,vs,ve,fj){
+  const sz=TCFG[team].size;
+  const active=fj.filter(j=>j.team===team&&(j.status==='inprogress'||j.status==='todo'));
+  let init=active.filter(j=>pD(j.start)&&pD(j.end)&&pD(j.start)<=vs&&aD(pD(j.end),1)>vs).reduce((s,j)=>s+(j.manpower||1),0);
+  const evts=[{d:new Date(vs),v:0}];
+  active.forEach(j=>{
+    const s=pD(j.start),e=j.end?aD(pD(j.end),1):null,mp=j.manpower||1;
+    if(!s||!e)return;
+    if(s>vs&&s<ve)evts.push({d:s,v:mp});
+    if(e>vs&&e<ve)evts.push({d:e,v:-mp});
+  });
+  evts.push({d:new Date(ve),v:0});
+  evts.sort((a,b)=>a.d-b.d);
+  const dd=[];
+  for(const e of evts){if(dd.length&&dd[dd.length-1].d.getTime()===e.d.getTime())dd[dd.length-1].v+=e.v;else dd.push({d:new Date(e.d),v:e.v});}
+  const segs=[];let util=init;
+  for(let i=0;i<dd.length-1;i++){
+    const s=dd[i].d,e=dd[i+1].d;
+    if(e>vs&&s<ve&&e>s)segs.push({s,e,used:util,avail:Math.max(0,sz-util)});
+    util+=dd[i+1].v;
+  }
+  return segs;
+}
+
+function render(){
+  weeksToShow=parseInt(document.getElementById('zoom-sel').value);
+  const fj=getFiltered();
+  const td=weeksToShow*7,vs=viewStart,ve=aD(vs,td),TODAY=new Date();
+  const el=document.getElementById('gantt');
+  const cw=el.parentElement.offsetWidth||900;
+  const LW=160,dw=Math.max(7,Math.floor((cw-LW-2)/td)),bw=td*dw;
+  const LH=20,PAD=8,STRIP=6;
+  const filterTeam=document.getElementById('filter-team').value;
+  const visTeams=TEAMS.filter(t=>!filterTeam||t===filterTeam);
+
+  document.getElementById('nav-label').textContent=TM[vs.getMonth()]+' '+(vs.getFullYear()+543)+' – '+TM[aD(ve,-1).getMonth()]+' '+(aD(ve,-1).getFullYear()+543);
+  document.getElementById('total-jobs-pill').textContent=`${jobs.length} งาน`;
+
+  visTeams.forEach(team=>{
+    const sz=TCFG[team].size;
+    assignLanes(fj.filter(j=>j.team===team&&j.status!=='pending'),sz);
+    assignLanes(fj.filter(j=>j.team===team&&j.status==='pending'),sz);
+  });
+
+  let h=`<div style="min-width:${LW+bw}px;font-family:'Sarabun',system-ui,sans-serif;">`;
+
+  // Month header
+  h+=`<div style="display:flex;border-bottom:1px solid #E2EAF4;">`;
+  h+=`<div style="width:${LW}px;min-width:${LW}px;height:26px;border-right:1px solid #E2EAF4;background:#F8FAFE;"></div>`;
+  h+=`<div style="position:relative;flex:1;height:26px;overflow:hidden;background:#F8FAFE;">`;
+  let md=new Date(vs.getFullYear(),vs.getMonth(),1);
+  while(md<ve){
+    const ms=md<vs?vs:md,mn=new Date(md.getFullYear(),md.getMonth()+1,1),me=mn>ve?ve:mn;
+    const ml=d2p(ms,vs,dw),mw=d2p(me,vs,dw)-ml;
+    if(mw>10)h+=`<div style="position:absolute;left:${ml}px;width:${mw}px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#2E5580;border-right:1px solid #E2EAF4;">${TM[md.getMonth()]} ${md.getFullYear()+543}</div>`;
+    md=new Date(mn);
+  }
+  h+=`</div></div>`;
+
+  // Week row
+  const todayPx=d2p(TODAY,vs,dw);
+  h+=`<div style="display:flex;border-bottom:1px solid #E2EAF4;">`;
+  h+=`<div style="width:${LW}px;min-width:${LW}px;height:18px;border-right:1px solid #E2EAF4;background:#F8FAFE;font-size:9px;color:#9AACC0;display:flex;align-items:center;padding-left:10px;letter-spacing:.4px;">TEAM / LANE</div>`;
+  h+=`<div style="position:relative;flex:1;height:18px;overflow:hidden;background:#F8FAFE;">`;
+  let wd=new Date(vs);const dw0=wd.getDay();wd=aD(wd,dw0===0?-6:1-dw0);
+  while(wd<ve){
+    const lf=d2p(wd,vs,dw);
+    if(lf>=0&&lf<bw){
+      h+=`<div style="position:absolute;left:${lf}px;top:4px;bottom:0;width:.5px;background:#DDE5F0;"></div>`;
+      if(dw*7>30)h+=`<div style="position:absolute;left:${lf+2}px;top:2px;font-size:8.5px;color:#9AACC0;">${wd.getDate()}/${wd.getMonth()+1}</div>`;
+    }
+    wd=aD(wd,7);
+  }
+  if(todayPx>=0&&todayPx<=bw)h+=`<div style="position:absolute;left:${todayPx}px;top:0;bottom:0;width:2.5px;background:#E24B4A;opacity:.9;"></div>`;
+  h+=`</div></div>`;
+
+  visTeams.forEach((team,ti)=>{
+    const sz=TCFG[team].size,RH=sz*LH+PAD+STRIP;
+    const isLast=ti===visTeams.length-1;
+    const tj=fj.filter(j=>j.team===team);
+    const committed=tj.filter(j=>j.status!=='pending');
+    const pending=tj.filter(j=>j.status==='pending');
+    const capSegs=getCapSegs(team,vs,ve,fj);
+    const todayActive=committed.filter(j=>pD(j.start)&&pD(j.end)&&pD(j.start)<=TODAY&&aD(pD(j.end),1)>TODAY);
+    const todayUsed=todayActive.reduce((s,j)=>s+(j.manpower||1),0);
+    const todayAvail=Math.max(0,sz-todayUsed);
+    const isOver=todayUsed>sz;
+    const bpct=Math.round(Math.min(todayUsed/sz,1)*100);
+
+    h+=`<div style="display:flex;${!isLast?'border-bottom:1px solid #EDF2F8;':''}">`;
+    // Label
+    h+=`<div style="width:${LW}px;min-width:${LW}px;height:${RH}px;border-right:1px solid #E2EAF4;padding:6px 10px;background:#F8FAFE;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;">`;
+    h+=`<div style="font-size:13px;font-weight:600;color:#1E3A5F;">${eH(team)}</div>`;
+    h+=`<div style="font-size:9px;color:#9AACC0;margin-top:1px;letter-spacing:.3px;">${sz} LANES · ${sz} คน</div>`;
+    h+=`<div style="margin-top:5px;height:3px;background:#E2EAF4;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${Math.min(bpct,100)}%;background:${isOver?'#E24B4A':'#378ADD'};border-radius:2px;"></div></div>`;
+    h+=`<div style="font-size:10px;margin-top:3px;font-weight:500;color:${isOver?'#C0392B':todayAvail>0?'#1A7A4A':'#9AACC0'};">${todayUsed}/${sz} · ${isOver?'⚠ เกิน '+todayUsed:todayAvail>0?'ว่าง '+todayAvail+' คน':'เต็ม'}</div>`;
+    h+=`</div>`;
+
+    // Body
+    h+=`<div style="flex:1;position:relative;height:${RH}px;background:${ti%2===1?'#FAFBFE':'#fff'};">`;
+
+    // Capacity green overlays
+    capSegs.forEach(seg=>{
+      if(seg.e<=vs||seg.s>=ve||seg.avail===0)return;
+      const gl=Math.max(0,d2p(seg.s,vs,dw)),gr=Math.min(bw,d2p(seg.e,vs,dw));
+      if(gr<=gl)return;
+      h+=`<div style="position:absolute;left:${gl}px;width:${gr-gl}px;top:0;bottom:${STRIP}px;background:rgba(26,122,74,${(seg.avail/sz*0.1).toFixed(2)});pointer-events:none;"></div>`;
+    });
+
+    // Lane lines
+    for(let l=1;l<sz;l++)h+=`<div style="position:absolute;left:0;right:0;top:${PAD/2+l*LH}px;height:.5px;background:#EDF2F8;pointer-events:none;"></div>`;
+
+    // Week grid
+    let wl2=new Date(vs);const dww=wl2.getDay();wl2=aD(wl2,dww===0?-6:1-dww);
+    while(wl2<ve){const lf=d2p(wl2,vs,dw);if(lf>0&&lf<bw)h+=`<div style="position:absolute;left:${lf}px;top:0;bottom:0;width:.5px;background:#EDF2F8;pointer-events:none;"></div>`;wl2=aD(wl2,7);}
+
+    // Draw bars
+    const drawBar=(job,isPnd)=>{
+      if(!job.start||!job.end)return;
+      const js=pD(job.start),je=aD(pD(job.end),1);
+      if(je<=vs||js>=ve)return;
+      const jl=Math.max(0,d2p(js,vs,dw)),jr=Math.min(bw,d2p(je,vs,dw)),jw=jr-jl;
+      if(jw<1)return;
+      const jt=JT[job.jobType]||JT['Pretender'],sc=SC[job.status]||SC.todo;
+      const bt=PAD/2+(job._lane||0)*LH,bh=(job._span||1)*LH-3;
+      const daysLeft=job.due?Math.round((pD(job.due)-new Date())/86400000):null;
+      const isOverdue=daysLeft!==null&&daysLeft<0;
+      const sel=job.id===selId;
+      let dueM='';
+      if(job.due){const dp=d2p(pD(job.due),vs,dw);if(dp>jl&&dp<=jr)dueM=`<div style="position:absolute;right:0;top:0;bottom:0;width:3px;background:#E24B4A;border-radius:0 3px 3px 0;"></div>`;}
+      h+=`<div onclick="clickJob(${job.id})" title="${eH(job.name)} · ${eH(job.pkg)}\n${eH(job.jobType)} · ${sc.lbl}\nMP: ${job.manpower} คน\nDue: ${job.due||'—'}"
+        style="position:absolute;left:${jl}px;width:${jw}px;top:${bt}px;height:${bh}px;
+          background:${isOverdue?'rgba(224,68,68,.15)':jt.bg};
+          border-left:3px solid ${sc.bc};border-radius:0 4px 4px 0;
+          cursor:pointer;display:flex;align-items:center;padding:0 5px;overflow:hidden;
+          ${isPnd?'opacity:.5;border-style:dashed;':''}
+          ${sel?`box-shadow:0 0 0 2px ${sc.bc};`:''}
+          ${job._ov?'border-top:2px solid #E24B4A;border-bottom:2px solid #E24B4A;':''}
+          transition:opacity .15s;">
+        ${jw>20?`<span style="font-size:9px;color:${isOverdue?'#C0392B':jt.c};font-weight:700;flex-shrink:0;white-space:nowrap;">${jt.sh}</span>`:''}
+        ${jw>80?`<span style="font-size:9px;color:#1A1A2E;margin-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${eH(job.name)}</span>`:''}
+        ${job._ov&&jw>18?`<span style="font-size:9px;color:#E24B4A;margin-left:3px;flex-shrink:0;font-weight:700;">!</span>`:''}
+        ${dueM}
+      </div>`;
+    };
+    committed.forEach(j=>drawBar(j,false));
+    pending.forEach(j=>drawBar(j,true));
+
+    // Due triangles outside bar
+    tj.forEach(job=>{
+      if(!job.due||!job.end)return;
+      const dd2=pD(job.due),je=pD(job.end);
+      if(!dd2||!je||dd2<=je)return;
+      const dp=d2p(dd2,vs,dw);
+      if(dp<0||dp>bw)return;
+      h+=`<div style="position:absolute;left:${dp-5}px;top:${PAD/2+(job._lane||0)*LH+1}px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:9px solid #E24B4A;pointer-events:none;opacity:.85;"></div>`;
+    });
+
+    // Cap strip
+    capSegs.forEach(seg=>{
+      if(seg.e<=vs||seg.s>=ve)return;
+      const gl=Math.max(0,d2p(seg.s,vs,dw)),gr=Math.min(bw,d2p(seg.e,vs,dw));
+      if(gr<=gl)return;
+      const clr=seg.avail>0?'#1A7A4A':seg.used>sz?'#E24B4A':'#888780';
+      h+=`<div style="position:absolute;left:${gl}px;width:${gr-gl}px;bottom:0;height:${STRIP}px;background:${clr};opacity:${seg.avail>0?.5:.2};border-radius:1px;"></div>`;
+    });
+
+    if(todayPx>=0&&todayPx<=bw)h+=`<div style="position:absolute;left:${todayPx}px;top:0;bottom:0;width:1.5px;background:#E24B4A;opacity:.3;pointer-events:none;"></div>`;
+    h+=`</div></div>`;
+  });
+  h+=`</div>`;
+  el.innerHTML=h;
+  renderSummary();
+}
+
+function renderSummary(){
+  const TODAY=new Date();const fj=getFiltered();
+  const filterTeam=document.getElementById('filter-team').value;
+  const visTeams=TEAMS.filter(t=>!filterTeam||t===filterTeam);
+  let h='';
+  visTeams.forEach(team=>{
+    const sz=TCFG[team].size;
+    const active=fj.filter(j=>j.team===team&&(j.status==='inprogress'||j.status==='todo')&&pD(j.start)&&pD(j.end)&&pD(j.start)<=TODAY&&aD(pD(j.end),1)>TODAY);
+    const used=active.reduce((s,j)=>s+(j.manpower||1),0);
+    const avail=Math.max(0,sz-used);
+    const isOver=used>sz;
+    const bpct=Math.round(Math.min(used/sz,1)*100);
+    const stdJobs=Math.floor(avail/getStdMp(team));
+    h+=`<div class="summary-card">
+      <div class="sc-team">${eH(team)} (${sz} คน)</div>
+      <div class="sc-bar-wrap"><div class="sc-bar" style="width:${Math.min(bpct,100)}%;background:${isOver?'#E24B4A':'#378ADD'};"></div></div>
+      <div class="sc-num">${isOver?used:avail}<span>/${sz}</span></div>
+      <div class="sc-avail" style="color:${isOver?'#C0392B':avail>0?'#1A7A4A':'#9AACC0'};">${isOver?'⚠ เกิน '+used+' คน':avail>0?'ว่าง '+avail+' คน':'เต็ม'}</div>
+      ${!isOver&&avail>0?`<div style="font-size:9px;color:#378ADD;margin-top:3px;font-weight:600;">รับได้ ${stdJobs} งาน std</div>`:''}
+      ${slotRow(sz,used)}
+    </div>`;
+  });
+  document.getElementById('summary-cards').innerHTML=h;
+  renderStdCapacity();
+}
+
+function renderLegend(){
+  let h='';
+  Object.entries(JT).forEach(([t,v])=>{
+    h+=`<div class="legend-item"><div class="legend-swatch" style="background:${v.bg};border-left:3px solid ${v.c};"></div>${eH(t)}</div>`;
+  });
+  h+=`<div class="legend-sep"></div>`;
+  Object.entries(SC).forEach(([st,v])=>{
+    const bs=st==='pending'?'dashed':'solid';
+    h+=`<div class="legend-item"><div class="legend-swatch" style="background:rgba(0,0,0,.04);border-left:3px ${bs} ${v.bc};"></div>${v.lbl}</div>`;
+  });
+  h+=`<div class="legend-sep"></div>`;
+  h+=`<div class="legend-item" style="color:#E24B4A;">▲ Due Date</div>`;
+  h+=`<div class="legend-item"><div style="width:12px;height:5px;background:#1A7A4A;border-radius:1px;opacity:.5;display:inline-block;margin-right:3px;"></div>ว่าง</div>`;
+  document.getElementById('legend').innerHTML=h;
+}
+
+function navigate(dir){viewStart=aD(viewStart,dir*Math.ceil(weeksToShow/3)*7);render();}
+function goToday(){viewStart=aD(new Date(),-14);render();}
+function updateMpMax(){
+  const t=document.getElementById('f-team').value;
+  const jt=document.getElementById('f-jtype').value;
+  const max=TCFG[t]?TCFG[t].size:6;
+  const std=getStdMp(t,jt);
+  const mp=document.getElementById('f-mp');
+  mp.max=max;
+  if(!editId||parseInt(mp.value)===0) mp.value=std;
+  if(parseInt(mp.value)>max)mp.value=max;
+  document.getElementById('mp-hint').textContent=`/ ${max} คน (std=${std})`;
+}
+function clickJob(id){
+  selId=id;const job=jobs.find(j=>j.id===id);if(!job)return;
+  const jt=JT[job.jobType]||JT['Pretender'],sc=SC[job.status]||SC.todo;
+  const daysLeft=job.due?Math.round((pD(job.due)-new Date())/86400000):null;
+  const dlStr=daysLeft!==null?`<span style="color:${daysLeft<0?'#C0392B':daysLeft<=3?'#E65100':'#1A7A4A'}">${daysLeft<0?'⚠ เกิน '+Math.abs(daysLeft)+' วัน':'อีก '+daysLeft+' วัน'}</span>`:'';
+  document.getElementById('jd-title').innerHTML=`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${jt.c};margin-right:6px;vertical-align:middle;"></span><strong>${eH(job.name)}</strong> — ${eH(job.pkg)}`;
+  document.getElementById('jd-sub').innerHTML=`ทีม: <strong style="color:#1E3A5F">${eH(job.team)}</strong> &nbsp;·&nbsp; ประเภท: <strong style="color:${jt.c}">${eH(job.jobType)}</strong> &nbsp;·&nbsp; <span style="color:${sc.bc}">${sc.lbl}</span><br>Manpower: <strong>${job.manpower} คน</strong><br>เริ่ม: ${fmtD(pD(job.start))} &nbsp;→&nbsp; สิ้นสุด: ${fmtD(pD(job.end))}<br>Due Date: <strong>${job.due?fmtD(pD(job.due)):'—'}</strong> &nbsp; ${dlStr}`;
+  document.getElementById('job-detail').classList.add('open');
+  render();
+}
+function closeDetail(){selId=null;document.getElementById('job-detail').classList.remove('open');render();}
+function openEdit(){
+  if(!selId)return;const job=jobs.find(j=>j.id===selId);if(!job)return;
+  editId=job.id;
+  document.getElementById('f-name').value=job.name;
+  document.getElementById('f-pkg').value=job.pkg||'';
+  document.getElementById('f-team').value=job.team;
+  document.getElementById('f-jtype').value=job.jobType;
+  document.getElementById('f-status').value=job.status;
+  document.getElementById('f-start').value=job.start||'';
+  document.getElementById('f-end').value=job.end||'';
+  document.getElementById('f-due').value=job.due||'';
+  document.getElementById('f-mp').value=job.manpower||1;
+  updateMpMax();
+  document.getElementById('form-title').textContent='แก้ไขงาน';
+  document.getElementById('del-btn').style.display='inline-block';
+  document.getElementById('del-btn').textContent='ลบงาน';
+  document.getElementById('form-err').style.display='none';
+  delC=false;
+  document.getElementById('add-form').classList.add('open');
+  document.getElementById('toggle-btn').textContent='× ปิด';
+}
+function toggleForm(){
+  const f=document.getElementById('add-form');
+  if(f.classList.contains('open')){cancelForm();return;}
+  editId=null;delC=false;
+  ['f-name','f-pkg','f-start','f-end','f-due'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-status').value='todo';
+  document.getElementById('f-jtype').value='Pretender';
+  document.getElementById('f-mp').value=getStdMp(document.getElementById('f-team').value);
+  document.getElementById('form-title').textContent='เพิ่มงานใหม่';
+  document.getElementById('del-btn').style.display='none';
+  document.getElementById('form-err').style.display='none';
+  updateMpMax();
+  f.classList.add('open');
+  document.getElementById('toggle-btn').textContent='× ปิด';
+}
+function cancelForm(){
+  document.getElementById('add-form').classList.remove('open');
+  document.getElementById('toggle-btn').textContent='+ เพิ่มงาน';
+  editId=null;delC=false;
+}
+function saveJob(){
+  const n=document.getElementById('f-name').value.trim();
+  const t=document.getElementById('f-team').value;
+  const jt=document.getElementById('f-jtype').value;
+  const st=document.getElementById('f-status').value;
+  const s=document.getElementById('f-start').value;
+  const e=document.getElementById('f-end').value;
+  const due=document.getElementById('f-due').value;
+  const pkg=document.getElementById('f-pkg').value.trim();
+  const mp=Math.max(1,Math.min(parseInt(document.getElementById('f-mp').value)||1,TCFG[t]?TCFG[t].size:6));
+  const err=document.getElementById('form-err');
+  if(!n){err.textContent='กรุณากรอกชื่อโปรเจกต์';err.style.display='block';return;}
+  err.style.display='none';
+  if(editId){const j=jobs.find(j=>j.id===editId);if(j){j.name=n;j.pkg=pkg;j.team=t;j.jobType=jt;j.status=st;j.start=s||null;j.end=e||null;j.due=due||null;j.manpower=mp;}}
+  else jobs.push({id:nextId++,name:n,pkg,team:t,jobType:jt,start:s||null,end:e||null,due:due||null,status:st,manpower:mp});
+  cancelForm();closeDetail();render();
+}
+function deleteJob(){
+  if(!editId)return;
+  if(!delC){delC=true;document.getElementById('del-btn').textContent='ยืนยันลบ?';setTimeout(()=>{delC=false;const b=document.getElementById('del-btn');if(b)b.textContent='ลบงาน';},3000);return;}
+  jobs=jobs.filter(j=>j.id!==editId);
+  cancelForm();closeDetail();render();
+}
+
+// ── Standard rule helpers ──────────────────────────────────────
+const STD = {
+  'Blank BOQ':    { mp:{'AR&ID':1,'ST':1,'MEP':3,'Budget':1}, wks:{S:4,M:4,L:4} },
+  'Pretender':    { mp:{'AR&ID':3,'ST':3,'MEP':3,'Budget':2}, wks:{S:4,M:5,L:6} },
+  'Budget':       { mp:{'AR&ID':1,'ST':1,'MEP':1,'Budget':2}, wks:{S:4,M:5,L:6} },
+  'VE':           { mp:{'AR&ID':2,'ST':1,'MEP':2,'Budget':1}, wks:{S:2,M:2,L:3} },
+  'Cost Exercise':{ mp:{'AR&ID':1,'ST':1,'MEP':2,'Budget':1}, wks:{S:3,M:3,L:4} },
+  'VO':           { mp:{'AR&ID':1,'ST':1,'MEP':1,'Budget':1}, wks:{S:2,M:5,L:6} },
+  'Meeting':      { mp:{'AR&ID':1,'ST':1,'MEP':1,'Budget':1}, wks:{S:1,M:1,L:1} },
+};
+const SIZE_KEYS = {S:'0–10,000 m²', M:'10,001–30,000 m²', L:'30,000+ m²'};
+function getStdMp(team, jobType){
+  const jt = jobType || (document.getElementById('f-jtype')?.value) || 'Pretender';
+  return (STD[jt]?.mp?.[team]) ?? 1;
+}
+function getStdWks(jobType, size){
+  return STD[jobType]?.wks?.[size||'M'] ?? 4;
+}
+function autoFillEnd(){
+  const s   = document.getElementById('f-start').value;
+  const jt  = document.getElementById('f-jtype').value;
+  const sz  = document.getElementById('f-projsize')?.value || 'M';
+  if(!s) return;
+  const wks = getStdWks(jt, sz);
+  const sd  = new Date(s);
+  sd.setDate(sd.getDate() + wks * 7);
+  document.getElementById('f-end').value = sd.toISOString().split('T')[0];
+  document.getElementById('dur-hint').textContent = `${wks} สัปดาห์ (${SIZE_KEYS[sz]})`;
+}
+function onJobTypeChange(){
+  updateMpMax();
+  autoFillEnd();
+}
+
+function renderStdCapacity(){
+  const TODAY = new Date();
+  const fj = getFiltered();
+  // Build table: rows=teams, cols=job types
+  const jTypes = ['Blank BOQ','Pretender','Budget','VE','Cost Exercise','VO'];
+  let h = '<table style="border-collapse:collapse;font-size:10px;">';
+  h += '<tr><th style="padding:3px 6px;color:#5A7A9A;text-align:left;font-weight:600;border-bottom:1px solid #DDE5F0;">ทีม</th>';
+  jTypes.forEach(jt=>{ h+=`<th style="padding:3px 6px;text-align:center;color:#5A7A9A;border-bottom:1px solid #DDE5F0;">${jt}</th>`; });
+  h += '</tr>';
+  TEAMS.forEach(team=>{
+    const sz = TCFG[team].size;
+    const active = fj.filter(j=>j.team===team&&(j.status==='inprogress'||j.status==='todo')&&pD(j.start)&&pD(j.end)&&pD(j.start)<=TODAY&&aD(pD(j.end),1)>TODAY);
+    const used = active.reduce((s,j)=>s+(j.manpower||1),0);
+    const avail = Math.max(0, sz - used);
+    h += `<tr><td style="padding:3px 8px;font-weight:600;color:#1E3A5F;white-space:nowrap;">${eH(team)}<br><span style="font-size:9px;color:#9AACC0;font-weight:400;">ว่าง ${avail}/${sz}</span></td>`;
+    jTypes.forEach(jt=>{
+      const mp = STD[jt]?.mp[team] ?? 1;
+      const n  = Math.floor(avail / mp);
+      const c  = n===0?'#C0392B':n>=2?'#1A7A4A':'#E65100';
+      h += `<td style="padding:3px 6px;text-align:center;"><span style="color:${c};font-weight:700;">${n}</span><span style="color:#9AACC0;font-size:9px;">(${mp}p)</span></td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</table>';
+  const el = document.getElementById('std-cap-grid');
+  if(el) el.innerHTML = h;
+}
+
+// ── Slot row in summary cards ──────────────────────────────────
+function slotRow(sz, used){
+  const slots = [];
+  for(let i=0;i<sz;i++){
+    if(i<used) slots.push('<div class="slot ' + (used>sz?'over':'used') + '"></div>');
+    else slots.push('<div class="slot free"></div>');
+  }
+  return '<div class="slot-row">' + slots.join('') + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SharePoint REST API Integration
+// ═══════════════════════════════════════════════════════════════
+
+// Column mapping: JS field → SharePoint Internal Name
+const SP_MAP = {
+  name:      'Title',
+  pkg:       'Package',
+  jobType:   'JobType',
+  team:      'Team',
+  start:     'StartDate',
+  end:       'FinishDate',
+  due:       'DueDate',
+  status:    'JobStatus',
+  manpower:  'Manpower',
+};
+
+function spSiteUrl(){ return (document.getElementById('sp-site').value||'').replace(/\/$/,''); }
+function spListName(){ return document.getElementById('sp-list').value||'BOQ_WorkPlan'; }
+function spApiBase(){ return `${spSiteUrl()}/_api/web/lists/getbytitle('${encodeURIComponent(spListName())}')`; }
+
+function spStatus(msg, ok=true){
+  const el=document.getElementById('sp-status');
+  el.textContent=msg;
+  el.style.color=ok?'#1A7A4A':'#C0392B';
+}
+
+async function spConnect(){
+  const site=spSiteUrl();
+  if(!site){spStatus('กรุณาใส่ URL ของ SharePoint Site','false');return;}
+  spStatus('กำลังเชื่อมต่อ...');
+  try{
+    const res=await fetch(`${spApiBase()}?$select=Title&$top=1`,{
+      headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
+    });
+    if(res.ok){
+      spStatus(`✓ เชื่อมต่อสำเร็จ — List: ${spListName()}`);
+      document.getElementById('sp-push-btn').style.display='inline-block';
+      document.getElementById('sp-pull-btn').style.display='inline-block';
+      spPull();
+    } else {
+      const t=await res.text();
+      if(res.status===404) spStatus(`❌ ไม่พบ List "${spListName()}" — ตรวจสอบชื่อ List หรือสร้างใหม่`,false);
+      else spStatus(`❌ Error ${res.status}: ${t.substring(0,80)}`,false);
+    }
+  }catch(e){
+    spStatus('❌ ไม่สามารถเชื่อมต่อได้ — ตรวจสอบ URL และสิทธิ์ CORS',false);
+    console.error(e);
+  }
+}
+
+function jobToSp(j){
+  const item={__metadata:{type:'SP.Data.'+spListName().replace(/[^a-zA-Z0-9]/g,'_')+'ListItem'}};
+  item.Title     = j.name||'(ไม่มีชื่อ)';
+  item.Package   = j.pkg||'';
+  item.JobType   = j.jobType||'';
+  item.Team      = j.team||'';
+  item.StartDate = j.start||null;
+  item.FinishDate= j.end||null;
+  item.DueDate   = j.due||null;
+  item.JobStatus = j.status||'todo';
+  item.Manpower  = j.manpower||1;
+  return item;
+}
+
+function spToJob(item, existingId){
+  return {
+    id:        existingId || item.Id || Date.now(),
+    _spId:     item.Id,
+    name:      item.Title||'',
+    pkg:       item.Package||'',
+    jobType:   item.JobType||'Pretender',
+    team:      item.Team||'AR&ID',
+    start:     item.StartDate?item.StartDate.substring(0,10):null,
+    end:       item.FinishDate?item.FinishDate.substring(0,10):null,
+    due:       item.DueDate?item.DueDate.substring(0,10):null,
+    status:    item.JobStatus||'todo',
+    manpower:  item.Manpower||1,
+  };
+}
+
+async function spGetDigest(){
+  const res=await fetch(`${spSiteUrl()}/_api/contextinfo`,{
+    method:'POST',
+    headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
+  });
+  const d=await res.json();
+  return d.FormDigestValue;
+}
+
+async function spPull(){
+  spStatus('⬇ กำลังโหลดข้อมูลจาก SharePoint...');
+  try{
+    const res=await fetch(
+      `${spApiBase()}/items?$select=Id,Title,Package,JobType,Team,StartDate,FinishDate,DueDate,JobStatus,Manpower&$orderby=Id&$top=500`,
+      {headers:{'Accept':'application/json;odata=nometadata'}}
+    );
+    if(!res.ok){spStatus(`❌ Pull failed: ${res.status}`,false);return;}
+    const data=await res.json();
+    const spItems=data.value||[];
+    if(spItems.length===0){
+      spStatus(`✓ List ว่างเปล่า — ข้อมูลใน browser ยังคงอยู่`);
+      return;
+    }
+    jobs=spItems.map((item,i)=>spToJob(item, i+1));
+    nextId=jobs.length+1;
+    spSave();
+    render();
+    spStatus(`✓ โหลดสำเร็จ — ${jobs.length} รายการ`);
+  }catch(e){
+    spStatus('❌ Pull error: '+e.message,false);
+  }
+}
+
+async function spPush(){
+  if(!confirm(`Push ข้อมูล ${jobs.length} รายการขึ้น SharePoint? (จะ overwrite ข้อมูลเดิมทั้งหมด)`)) return;
+  spStatus('⬆ กำลัง Push...');
+  try{
+    const digest=await spGetDigest();
+    const headers={
+      'Accept':'application/json;odata=nometadata',
+      'Content-Type':'application/json;odata=nometadata',
+      'X-RequestDigest':digest,
+    };
+    // Delete existing items first
+    const existRes=await fetch(`${spApiBase()}/items?$select=Id&$top=500`,{headers:{'Accept':'application/json;odata=nometadata'}});
+    const existData=await existRes.json();
+    for(const item of (existData.value||[])){
+      await fetch(`${spApiBase()}/items(${item.Id})`,{
+        method:'DELETE',
+        headers:{...headers,'IF-MATCH':'*','X-HTTP-Method':'DELETE'}
+      });
+    }
+    // Add all current jobs
+    let ok=0;
+    for(const job of jobs){
+      const body=jobToSp(job);
+      delete body.__metadata;
+      const r=await fetch(`${spApiBase()}/items`,{
+        method:'POST',
+        headers:{...headers,'Content-Type':'application/json;odata=nometadata'},
+        body:JSON.stringify(body)
+      });
+      if(r.ok) ok++;
+    }
+    spStatus(`✓ Push สำเร็จ — ${ok}/${jobs.length} รายการ`);
+  }catch(e){
+    spStatus('❌ Push error: '+e.message,false);
+    console.error(e);
+  }
+}
+
+// Save single job to SP (after add/edit)
+async function spSaveJob(job){
+  const site=spSiteUrl();
+  if(!site) return; // SP not configured
+  try{
+    const digest=await spGetDigest();
+    const headers={
+      'Accept':'application/json;odata=nometadata',
+      'Content-Type':'application/json;odata=nometadata',
+      'X-RequestDigest':digest,
+    };
+    const body=jobToSp(job);
+    delete body.__metadata;
+    if(job._spId){
+      // Update
+      await fetch(`${spApiBase()}/items(${job._spId})`,{
+        method:'POST',
+        headers:{...headers,'IF-MATCH':'*','X-HTTP-Method':'MERGE'},
+        body:JSON.stringify(body)
+      });
+    } else {
+      // Create
+      const r=await fetch(`${spApiBase()}/items`,{
+        method:'POST',headers,body:JSON.stringify(body)
+      });
+      if(r.ok){const d=await r.json();job._spId=d.Id;}
+    }
+  }catch(e){console.warn('SP save error:',e);}
+}
+
+async function spDeleteJob(job){
+  const site=spSiteUrl();
+  if(!site||!job._spId) return;
+  try{
+    const digest=await spGetDigest();
+    await fetch(`${spApiBase()}/items(${job._spId})`,{
+      method:'POST',
+      headers:{
+        'X-RequestDigest':digest,
+        'IF-MATCH':'*','X-HTTP-Method':'DELETE',
+        'Accept':'application/json;odata=nometadata'
+      }
+    });
+  }catch(e){console.warn('SP delete error:',e);}
+}
+
+// ── LocalStorage backup ──────────────────────────────────────────
+function spSave(){ try{localStorage.setItem('boq_jobs',JSON.stringify(jobs));localStorage.setItem('boq_nextid',nextId);}catch(e){} }
+function spLoad(){
+  try{
+    const s=localStorage.getItem('boq_jobs');
+    const n=localStorage.getItem('boq_nextid');
+    if(s){jobs=JSON.parse(s);nextId=n?parseInt(n):jobs.length+1;}
+  }catch(e){}
+}
+
+// ── Export / Import JSON ─────────────────────────────────────────
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({version:4,exported:new Date().toISOString(),jobs},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`BOQ_WorkPlan_${new Date().toISOString().substring(0,10)}.json`;a.click();
+}
+function importJSON(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      const imported=d.jobs||d;
+      if(!Array.isArray(imported)){alert('ไฟล์ไม่ถูกต้อง');return;}
+      jobs=imported;
+      nextId=Math.max(...jobs.map(j=>j.id||0))+1;
+      spSave();render();
+      alert(`นำเข้าสำเร็จ ${jobs.length} รายการ`);
+    }catch(err){alert('ไม่สามารถอ่านไฟล์ได้: '+err.message);}
+  };
+  r.readAsText(file);
+  evt.target.value='';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Patch saveJob & deleteJob to sync with SP
+// ══════════════════════════════════════════════════════════════════
+const _origSaveJob = saveJob;
+saveJob = function(){
+  // capture job before save to find it after
+  const isEdit = !!editId;
+  const eid = editId;
+  _origSaveJob();
+  // after save, sync to SP
+  const job = isEdit ? jobs.find(j=>j.id===eid) : jobs[jobs.length-1];
+  if(job){ spSave(); spSaveJob(job); }
+};
+
+const _origDeleteJob = deleteJob;
+deleteJob = async function(){
+  const job = jobs.find(j=>j.id===editId);
+  _origDeleteJob();
+  if(job){ spSave(); await spDeleteJob(job); }
+};
+
+// ── SharePoint List Creation Guide ──────────────────────────────
+// สร้าง SharePoint List ชื่อ "BOQ_WorkPlan" แล้วเพิ่ม columns:
+//   Package       → Single line of text
+//   JobType       → Choice: Pretender, Blank BOQ, Budget, VE, Cost Exercise, VO, Meeting
+//   Team          → Choice: AR&ID, ST, MEP, Budget
+//   StartDate     → Date and Time
+//   FinishDate    → Date and Time
+//   DueDate       → Date and Time
+//   JobStatus     → Choice: inprogress, todo, pending
+//   Manpower      → Number
+
+// ── Init ────────────────────────────────────────────────────────
+const TODAY=new Date();
+document.getElementById('today-str').textContent=`${TODAY.getDate()} ${TM[TODAY.getMonth()]} ${TODAY.getFullYear()+543}`;
+spLoad(); // load from localStorage first
+renderLegend();
+goToday();
+
+// Restore SP config from localStorage
+try{
+  const ss=localStorage.getItem('sp_site');const sl=localStorage.getItem('sp_list');
+  if(ss){document.getElementById('sp-site').value=ss;document.getElementById('sp-list').value=sl||'BOQ_WorkPlan';}
+}catch(e){}
+document.getElementById('sp-site').addEventListener('change',()=>{localStorage.setItem('sp_site',spSiteUrl());});
+document.getElementById('sp-list').addEventListener('change',()=>{localStorage.setItem('sp_list',spListName());});
+</script>
+</body>
+</html>
